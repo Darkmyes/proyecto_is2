@@ -6,7 +6,7 @@
         :grid=" $q.screen.lt.sm"
         :data="productos"
         :columns="columns"
-        row-key="id"
+        row-key="id_producto"
         :filter="filter"
         selection="multiple"
         :selected.sync="selected"
@@ -15,11 +15,11 @@
           <q-btn class="q-mr-sm" color="primary" dense flat :disable="loading || !(selected.length == 1)" icon="edit" @click="intentarActualizar"/>
           <q-btn class="q-mr-sm" color="red-5" dense flat :disable="loading || !(selected.length > 0)" icon="delete" @click="intentarEliminar"/>
           <q-btn class="q-mr-sm" color="primary" icon="add" label="Agregar" @click="dialog = true"/><q-space />
-          <q-input borderless dense debounce="300" v-model="filter" placeholder="Search">
+          <!-- <q-input borderless dense debounce="300" v-model="filter" placeholder="Search">
             <template v-slot:append>
               <q-icon name="search" />
             </template>
-          </q-input>
+          </q-input> -->
         </template>
       </q-table>
     </div>
@@ -31,22 +31,23 @@
           <div class="text-h6"> {{this.editando ? 'Editar Producto' : 'Nuevo Producto'}} </div>
         </q-card-section>
         <q-card-section class="q-pt-none">
-          <q-input v-model="editedItem.nombre" type="text" label="Nombre"/>
+          <q-input v-model="editedItem.name" type="text" label="Nombre"/>
           <q-input
             v-model="editedItem.descripcion"
             label="Descripción"
             autogrow
             type="textarea"
           />
+          <q-input v-model="editedItem.cantidad" type="number" label="Cantidad" />
           <div class="row justify-between">
-            <q-input v-model="editedItem.precio" type="number" label="Precio" />
+            <q-input v-model="editedItem.precio_c_u" type="number" label="Precio Unidad" />
             <q-separator spaced inset vertical dark />
-            <q-input v-model="editedItem.stock" type="number" label="Stock" />
+            <q-input v-model="editedItem.precio_doce" type="number" label="Precio Docena" />
           </div>
         </q-card-section>
         <q-card-actions align="right">
           <q-btn label="Cancelar" flat color="primary" v-close-popup />
-          <q-btn label="Guardar" color="primary" v-close-popup @click="eliminar"/>
+          <q-btn label="Guardar" color="primary" v-close-popup @click="regMod"/>
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -70,6 +71,8 @@
 </template>
 
 <script>
+import { mapState, mapActions } from 'vuex'
+
 export default {
   name: 'Productos',
   data: () => ({
@@ -85,33 +88,37 @@ export default {
         label: 'Id',
         align: 'start',
         sortable: false,
-        field: 'id'
+        field: 'id_producto'
       },
-      { name: 'Nombre', label: 'Nombre', field: 'nombre' },
+      { name: 'Nombre', label: 'Nombre', field: 'name' },
       { name: 'Descripción', label: 'Descripcion', field: 'descripcion' },
-      { name: 'Precio', format: (val, row) => `$ ${(val).toFixed(2)}`, label: 'Precio', field: 'precio' },
-      { name: 'Stock', label: 'Stock', field: 'stock' }
+      { name: 'Cantidad', label: 'Cantidad', field: 'cantidad' },
+      { name: 'Precio Unitario', format: (val, row) => `$ ${parseFloat(val).toFixed(2)}`, label: 'Precio Unitario', field: 'precio_c_u' },
+      { name: 'Precio Docena', format: (val, row) => `$ ${parseFloat(val).toFixed(2)}`, label: 'Precio Docena', field: 'precio_doce' }
     ],
     confirmEliminar: false,
-    productos: [],
+    // productos: [],
     editedIndex: -1,
     editedItem: {
       id: 0,
-      nombre: '',
+      name: '',
       descripcion: '',
-      precio: 0,
-      stock: 0
+      cantidad: 0,
+      precio_c_u: 0,
+      precio_doce: 0
     },
     defaultItem: {
       id: 0,
-      nombre: '',
+      name: '',
       descripcion: '',
-      precio: 0,
-      stock: 0
+      cantidad: 0,
+      precio_c_u: 0,
+      precio_doce: 0
     }
   }),
 
   computed: {
+    ...mapState('productos', ['productos']),
     formTitle () {
       return this.editando ? 'Editar Producto' : 'Nuevo Producto'
     }
@@ -126,45 +133,45 @@ export default {
     }
   },
 
-  created () {
-    this.initialize()
+  mounted () {
+    this.listarProductos(this.$axios)
   },
 
   methods: {
-    initialize () {
-      this.productos = [
-        {
-          id: 0,
-          nombre: 'Frozen Yogurt',
-          descripcion: 'Yogurt muy rico y delicioso',
-          precio: 6.0,
-          stock: 24
-        },
-        {
-          id: 1,
-          nombre: 'Frozen Yogurt',
-          descripcion: 'Yogurt muy rico y delicioso',
-          precio: 6.0,
-          stock: 24
-        },
-        {
-          id: 2,
-          nombre: 'Frozen Yogurt',
-          descripcion: 'Yogurt muy rico y delicioso',
-          precio: 6.0,
-          stock: 24
-        }
-      ]
+    ...mapActions('productos', ['listarProductos', 'registrarProducto', 'actualizarProducto', 'eliminarProducto']),
+    validar () {
+      if (this.editedItem.nombre === '') {
+        return false
+      }
+      if (this.editedItem.descripcion === '') {
+        return false
+      }
+      if (this.editedItem.precio_c_u === 0) {
+        return false
+      }
+      if (this.editedItem.precio_doce === 0) {
+        return false
+      }
+      return true
+    },
+    regMod () {
+      if (this.editando) {
+        this.actualizar()
+      } else {
+        this.registrar()
+      }
+    },
+    limpiarDatos () {
+      this.editedItem = Object.assign({}, this.defaultItem)
     },
     registrar () {
-      /* if (!this.validarNuevaCategoria()) {
+      if (!this.validar()) {
         this.errorModal = true
       } else {
-        this.registrarCategoria({ axios: this.$axios, categoria: this.nuevaCategoria })
+        this.registrarProducto({ axios: this.$axios, producto: this.editedItem })
           .then(res => {
-            console.log('si')
-            this.limpiarNuevaCategoria()
-            this.listarCategoriasAdmin(this.$axios)
+            this.limpiarDatos()
+            this.listarProductos(this.$axios)
             this.$q.notify({
               type: 'positive',
               message: 'Se registró con éxito',
@@ -185,18 +192,18 @@ export default {
               ]
             })
           })
-      } */
+      }
     },
     actualizar () {
-      /* if (!this.validarUpdCategoria()) {
+      if (!this.validar()) {
         this.errorModal = true
       } else {
-        this.actualizarCategoria({ axios: this.$axios, categoria: this.updCategoria })
+        this.actualizarProducto({ axios: this.$axios, producto: this.editedItem })
           .then(res => {
             this.selected = []
             this.dialogActualizar = false
-            this.updCategoria = null
-            this.listarCategoriasAdmin(this.$axios)
+            this.updProducto = null
+            this.listarProductos(this.$axios)
 
             this.$q.notify({
               type: 'positive',
@@ -218,7 +225,7 @@ export default {
               ]
             })
           })
-      } */
+      }
     },
     intentarActualizar () {
       this.editedItem = Object.assign({}, this.selected[0])
@@ -226,15 +233,15 @@ export default {
       this.dialog = true
     },
     eliminar () {
-      // const peticiones = []
-      /* this.selected.forEach(e => {
-        peticiones.push(this.eliminarCategoria({ axios: this.$axios, id: e.id }))
+      const peticiones = []
+      this.selected.forEach(e => {
+        peticiones.push(this.eliminarProducto({ axios: this.$axios, id: e.id_producto }))
       })
 
       Promise.all(peticiones)
         .then((res) => {
           res.forEach(item => {
-            this.listarCategoriasAdmin(this.$axios)
+            this.listarProductos(this.$axios)
             this.selected = []
 
             this.$q.notify({
@@ -249,7 +256,7 @@ export default {
         })
         .catch(err => {
           err.forEach(item => {
-            this.listarCategoriasAdmin(this.$axios)
+            this.listarProductos(this.$axios)
             this.selected = []
             this.$q.notify({
               type: 'negative',
@@ -260,7 +267,7 @@ export default {
               ]
             })
           })
-        }) */
+        })
     },
     intentarEliminar () {
       this.confirmEliminar = true

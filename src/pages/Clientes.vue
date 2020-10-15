@@ -15,11 +15,11 @@
           <q-btn class="q-mr-sm" color="primary" dense flat :disable="loading || !(selected.length == 1)" icon="edit" @click="intentarActualizar"/>
           <q-btn class="q-mr-sm" color="red-5" dense flat :disable="loading || !(selected.length > 0)" icon="delete" @click="intentarEliminar"/>
           <q-btn class="q-mr-sm" color="primary" icon="add" label="Agregar" @click="dialog = true"/><q-space />
-          <q-input borderless dense debounce="300" v-model="filter" placeholder="Search">
+          <!-- <q-input borderless dense debounce="300" v-model="filter" placeholder="Search">
             <template v-slot:append>
               <q-icon name="search" />
             </template>
-          </q-input>
+          </q-input> -->
         </template>
       </q-table>
     </div>
@@ -32,9 +32,10 @@
         </q-card-section>
         <q-card-section class="q-pt-none">
           <q-input v-model="editedItem.cedula" type="text" label="Cédula"/>
-          <q-input v-model="editedItem.apellidos" type="text" label="Apellidos"/>
-          <q-input v-model="editedItem.nombres" type="text" label="Nombres"/>
+          <q-input v-model="editedItem.lastname" type="text" label="Apellidos"/>
+          <q-input v-model="editedItem.name" type="text" label="Nombres"/>
           <q-input v-model="editedItem.direccion" type="text" label="Dirección"/>
+          <q-input v-model="editedItem.email" type="text" label="Email"/>
           <q-input v-model="editedItem.celular" type="text" label="# Celular"/>
         </q-card-section>
         <q-card-actions align="right">
@@ -63,6 +64,8 @@
 </template>
 
 <script>
+import { mapState, mapActions } from 'vuex'
+
 export default {
   name: 'clientes',
   data: () => ({
@@ -80,31 +83,34 @@ export default {
         sortable: false,
         field: 'cedula'
       },
-      { name: 'nombres', label: 'Nombres', field: 'nombres' },
-      { name: 'descripción', label: 'Apellidos', field: 'apellidos' },
+      { name: 'nombres', label: 'Nombres', field: 'name' },
+      { name: 'descripción', label: 'Apellidos', field: 'lastname' },
+      { name: 'email', label: 'Email', field: 'email' },
       { name: 'celular', label: 'Celular', field: 'celular' },
       { name: 'direccion', label: 'Dirección', field: 'direccion' }
     ],
     confirmEliminar: false,
-    clientes: [],
     editedIndex: -1,
     editedItem: {
       cedula: '',
-      nombres: '',
-      apellidos: '',
+      name: '',
+      lastname: '',
       celular: '',
-      direccion: ''
+      direccion: '',
+      email: ''
     },
     defaultItem: {
       cedula: '',
-      nombres: '',
-      apellidos: '',
+      name: '',
+      lastname: '',
       celular: '',
-      direccion: ''
+      direccion: '',
+      email: ''
     }
   }),
 
   computed: {
+    ...mapState('clientes', ['clientes']),
     formTitle () {
       return this.editando ? 'Editar Cliente' : 'Nuevo Cliente'
     }
@@ -118,46 +124,44 @@ export default {
       val || this.closeDelete()
     }
   },
-
-  created () {
-    this.initialize()
+  mounted () {
+    this.listarClientes(this.$axios)
   },
-
   methods: {
-    initialize () {
-      this.clientes = [
-        {
-          cedula: '1314876580',
-          nombres: 'Franklin Andreé',
-          apellidos: 'Cuenca Meza',
-          celular: '0981319488',
-          direccion: 'Calle Oswaldo Loor y Benjamin Carrión'
-        },
-        {
-          cedula: '1324876580',
-          nombres: 'Washington Ali',
-          apellidos: 'Cedeño Cedeño',
-          celular: '0981319488',
-          direccion: 'Calle Oswaldo Loor y Benjamin Carrión'
-        },
-        {
-          cedula: '1334876580',
-          nombres: 'Fraadasdé',
-          apellidos: 'Cueadasdeza',
-          celular: '0981319488',
-          direccion: 'Calle Oswaldo Loor y Benjamin Carrión'
-        }
-      ]
+    ...mapActions('clientes', ['listarClientes', 'registrarCliente', 'actualizarCliente', 'eliminarCliente']),
+    validar () {
+      if (this.editedItem.nombre === '') {
+        return false
+      }
+      if (this.editedItem.descripcion === '') {
+        return false
+      }
+      if (this.editedItem.precio_c_u === 0) {
+        return false
+      }
+      if (this.editedItem.precio_doce === 0) {
+        return false
+      }
+      return true
+    },
+    regMod () {
+      if (this.editando) {
+        this.actualizar()
+      } else {
+        this.registrar()
+      }
+    },
+    limpiarDatos () {
+      this.editedItem = Object.assign({}, this.defaultItem)
     },
     registrar () {
-      /* if (!this.validarNuevaCategoria()) {
+      if (!this.validar()) {
         this.errorModal = true
       } else {
-        this.registrarCategoria({ axios: this.$axios, categoria: this.nuevaCategoria })
+        this.registrarCliente({ axios: this.$axios, cliente: this.editedItem })
           .then(res => {
-            console.log('si')
-            this.limpiarNuevaCategoria()
-            this.listarCategoriasAdmin(this.$axios)
+            this.limpiarDatos()
+            this.listarClientes(this.$axios)
             this.$q.notify({
               type: 'positive',
               message: 'Se registró con éxito',
@@ -178,18 +182,18 @@ export default {
               ]
             })
           })
-      } */
+      }
     },
     actualizar () {
-      /* if (!this.validarUpdCategoria()) {
+      if (!this.validar()) {
         this.errorModal = true
       } else {
-        this.actualizarCategoria({ axios: this.$axios, categoria: this.updCategoria })
+        this.actualizarCliente({ axios: this.$axios, cliente: this.editedItem })
           .then(res => {
             this.selected = []
             this.dialogActualizar = false
-            this.updCategoria = null
-            this.listarCategoriasAdmin(this.$axios)
+            this.updCliente = null
+            this.listarClientes(this.$axios)
 
             this.$q.notify({
               type: 'positive',
@@ -211,7 +215,7 @@ export default {
               ]
             })
           })
-      } */
+      }
     },
     intentarActualizar () {
       this.editedItem = Object.assign({}, this.selected[0])
@@ -219,15 +223,15 @@ export default {
       this.dialog = true
     },
     eliminar () {
-      // const peticiones = []
-      /* this.selected.forEach(e => {
-        peticiones.push(this.eliminarCategoria({ axios: this.$axios, id: e.id }))
+      const peticiones = []
+      this.selected.forEach(e => {
+        peticiones.push(this.eliminarCliente({ axios: this.$axios, id: e.cedula }))
       })
 
       Promise.all(peticiones)
         .then((res) => {
           res.forEach(item => {
-            this.listarCategoriasAdmin(this.$axios)
+            this.listarClientes(this.$axios)
             this.selected = []
 
             this.$q.notify({
@@ -242,7 +246,7 @@ export default {
         })
         .catch(err => {
           err.forEach(item => {
-            this.listarCategoriasAdmin(this.$axios)
+            this.listarClientes(this.$axios)
             this.selected = []
             this.$q.notify({
               type: 'negative',
@@ -253,7 +257,7 @@ export default {
               ]
             })
           })
-        }) */
+        })
     },
     intentarEliminar () {
       this.confirmEliminar = true
@@ -283,9 +287,8 @@ export default {
         this.editedItem = Object.assign({}, this.defaultItem)
       })
     },
-
     save () {
-      if (this.editando) {
+      if (!this.editando) {
         this.registrar()
       } else {
         this.actualizar()
