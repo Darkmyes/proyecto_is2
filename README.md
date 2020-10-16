@@ -1,26 +1,20 @@
 # Proyecto Ingeniería de Software 2 (i_software)
 
-A Quasar Framework app
+Es una aplicación construida sobre el Framework Quasar que se basa en Vuejs, ofrece todo un paquete de herramientas frontend
+como estilos de css, validaciones de campos, etc. asi pudiendo crear aplicaciones en tiempo record y con la posibilidad de exportar a varias plataformas, mediante tecnologías como Electronjs y ApacheCordova.
 
-## Install the dependencies
+## Instalar el Proyecto y sus dependencias, nos ubicamos en la carpeta obtenida de github
 ```bash
 npm install
 ```
 
-### Start the app in development mode (hot-code reloading, error reporting, etc.)
+### Iniciar el proyecto en modo desarrollador (hot-code reloading, error reporting, etc.)
 ```bash
 quasar dev
 ```
 
-### Lint the files
-```bash
-npm run lint
-```
-
-### Build the app for production
+### Construir la aplicación para estar en producción
 ```bash
 quasar build
 ```
-
-### Customize the configuration
-See [Configuring quasar.conf.js](https://quasar.dev/quasar-cli/quasar-conf-js).
+### El anterior comando generará una carpeta llamada "dist" la cual la podremos poner en nuestro servidor web como Apache, NginX, hosting compartido, etc.
